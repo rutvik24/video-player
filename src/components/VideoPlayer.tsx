@@ -236,29 +236,104 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     };
   }, [shakaLoaded]);
 
+  const isStreamingFormat = (url: string): boolean => {
+    const urlLower = url.toLowerCase();
+    return urlLower.includes('.m3u8') || 
+           urlLower.includes('.mpd') || 
+           urlLower.includes('manifest');
+  };
+
+  const isDirectVideoFile = (url: string): boolean => {
+    const urlLower = url.toLowerCase();
+    return urlLower.includes('.mp4') || 
+           urlLower.includes('.webm') || 
+           urlLower.includes('.mkv') ||
+           urlLower.includes('.avi') ||
+           urlLower.includes('.mov');
+  };
+
   const loadVideo = async (url: string, fileName?: string) => {
     const player = playerRef.current;
     const video = videoRef.current;
     
-    if (!player || !video) return;
+    if (!video) return;
 
     setLoading(true);
     setError('');
 
     try {
-      await player.load(url);
-      setLoading(false);
+      // Check if it's a direct video file or streaming format
+      if (isDirectVideoFile(url) && !isStreamingFormat(url)) {
+        // For direct video files (MP4, MKV, etc.), use native HTML5 video
+        // Detach Shaka Player if attached
+        if (player) {
+          try {
+            await player.detach();
+          } catch (e) {
+            console.log('Player detach error (safe to ignore):', e);
+          }
+        }
+        
+        // Set video source directly
+        video.src = url;
+        video.load();
+        
+        // Wait for metadata to load
+        await new Promise((resolve, reject) => {
+          const handleLoadedMetadata = () => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('error', handleError);
+            resolve(true);
+          };
+          
+          const handleError = () => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('error', handleError);
+            reject(new Error('Failed to load video file. The browser may not support this format.'));
+          };
+          
+          video.addEventListener('loadedmetadata', handleLoadedMetadata);
+          video.addEventListener('error', handleError);
+        });
+        
+        setLoading(false);
+      } else {
+        // For streaming formats (HLS, DASH), use Shaka Player
+        if (!player) {
+          throw new Error('Shaka Player not initialized');
+        }
+        
+        // Reattach player if needed
+        if (!player.getMediaElement()) {
+          await player.attach(video);
+        }
+        
+        await player.load(url);
+        setLoading(false);
+      }
       
       if (onVideoLoad) {
         onVideoLoad(url, fileName);
       }
       
       // Auto-play after loading
-      video.play();
+      video.play().catch((e) => {
+        console.log('Autoplay prevented by browser:', e);
+      });
     } catch (e) {
       const error = e as Error;
       console.error('Error loading video:', error);
-      setError(`Failed to load video: ${error.message || 'Unknown error'}`);
+      
+      let errorMessage = error.message || 'Unknown error';
+      
+      // Provide helpful error messages based on the error
+      if (errorMessage.includes('not support')) {
+        errorMessage += '. Try converting the video to MP4 or using an HLS/DASH stream.';
+      } else if (url.toLowerCase().includes('.mkv')) {
+        errorMessage = 'MKV format may not be fully supported by all browsers. For best compatibility, use MP4 files or HLS/DASH streams.';
+      }
+      
+      setError(`Failed to load video: ${errorMessage}`);
       setLoading(false);
     }
   };
@@ -392,7 +467,11 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       {/* Error Display */}
       {error && (
         <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-          {error}
+          <div className="font-semibold mb-1">Playback Error</div>
+          <div className="text-sm">{error}</div>
+          <div className="text-xs mt-2 opacity-80">
+            <strong>Tip:</strong> For best compatibility, use HLS (.m3u8), DASH (.mpd), or MP4 files. MKV and other formats may have limited browser support.
+          </div>
         </div>
       )}
 
