@@ -1,12 +1,9 @@
 'use client';
 
-import { useRef } from 'react';
 import VideoPlayer from '@/components/VideoPlayer';
 import VideoHistory from '@/components/VideoHistory';
 
 export default function Home() {
-  const playerRef = useRef<HTMLDivElement>(null);
-
   const handleVideoLoad = (url: string, fileName?: string) => {
     // Dispatch custom event for history tracking
     const event = new CustomEvent('videoLoaded', {
@@ -36,7 +33,7 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="space-y-8">
-          <VideoPlayer ref={playerRef} onVideoLoad={handleVideoLoad} />
+          <VideoPlayer onVideoLoad={handleVideoLoad} />
           <VideoHistory onLoadVideo={handleHistoryVideoLoad} />
         </div>
 

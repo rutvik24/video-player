@@ -51,6 +51,9 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     const loadShaka = async () => {
       try {
         const shakaModule = await import('shaka-player/dist/shaka-player.ui');
+        // Import CSS - TypeScript doesn't recognize CSS imports, but webpack/Next.js does
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         await import('shaka-player/dist/controls.css');
         shakaRef.current = shakaModule.default;
         setShakaLoaded(true);
@@ -77,6 +80,53 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     const video = videoRef.current;
     const container = containerRef.current;
     if (!video || !container) return;
+
+    // Keyboard controls handler
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          if (video.paused) {
+            video.play();
+          } else {
+            video.pause();
+          }
+          break;
+        case 'arrowleft':
+          e.preventDefault();
+          video.currentTime = Math.max(0, video.currentTime - 5);
+          break;
+        case 'arrowright':
+          e.preventDefault();
+          video.currentTime = Math.min(video.duration, video.currentTime + 5);
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          video.volume = Math.min(1, video.volume + 0.1);
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          video.volume = Math.max(0, video.volume - 0.1);
+          break;
+        case 'm':
+          e.preventDefault();
+          video.muted = !video.muted;
+          break;
+        case 'f':
+          e.preventDefault();
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else {
+            container.requestFullscreen();
+          }
+          break;
+      }
+    };
 
     // Initialize player asynchronously
     const initPlayer = async () => {
@@ -128,7 +178,8 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       const uniqueAudio: AudioTrack[] = [];
       const seenLanguages = new Set<string>();
       
-      audioTracksList.forEach((track, index) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      audioTracksList.forEach((track: any, index: number) => {
         const key = `${track.language}-${track.role}`;
         if (!seenLanguages.has(key)) {
           seenLanguages.add(key);
@@ -144,73 +195,33 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       setAudioTracks(uniqueAudio);
 
       // Get video qualities
+       
       const qualities = tracks
-        .filter((track) => track.height)
-        .map((track) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((track: any) => track.height)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((track: any) => ({
           height: track.height!,
           width: track.width!,
           bandwidth: track.bandwidth,
         }))
-        .sort((a, b) => b.height - a.height);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .sort((a: any, b: any) => b.height - a.height);
       
       // Remove duplicates
+       
       const uniqueQualities = qualities.filter(
-        (quality, index, self) =>
-          index === self.findIndex((q) => q.height === quality.height)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (quality: any, index: number, self: any[]) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          index === self.findIndex((q: any) => q.height === quality.height)
       );
       
       setVideoQualities(uniqueQualities);
     });
-
-      // Keyboard controls
-      const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key.toLowerCase()) {
-        case ' ':
-        case 'k':
-          e.preventDefault();
-          if (video.paused) {
-            video.play();
-          } else {
-            video.pause();
-          }
-          break;
-        case 'arrowleft':
-          e.preventDefault();
-          video.currentTime = Math.max(0, video.currentTime - 5);
-          break;
-        case 'arrowright':
-          e.preventDefault();
-          video.currentTime = Math.min(video.duration, video.currentTime + 5);
-          break;
-        case 'arrowup':
-          e.preventDefault();
-          video.volume = Math.min(1, video.volume + 0.1);
-          break;
-        case 'arrowdown':
-          e.preventDefault();
-          video.volume = Math.max(0, video.volume - 0.1);
-          break;
-        case 'm':
-          e.preventDefault();
-          video.muted = !video.muted;
-          break;
-        case 'f':
-          e.preventDefault();
-          if (document.fullscreenElement) {
-            document.exitFullscreen();
-          } else {
-            container.requestFullscreen();
-          }
-          break;
-      }
     };
 
-      document.addEventListener('keydown', handleKeyDown);
-    };
+    document.addEventListener('keydown', handleKeyDown);
 
     initPlayer();
 
