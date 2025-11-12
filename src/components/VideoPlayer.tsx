@@ -287,12 +287,25 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     const video = videoRef.current;
     if (!video || !videoUrl) return;
 
-    const link = document.createElement('a');
-    link.href = videoUrl;
-    link.download = videoUrl.split('/').pop() || 'video.mp4';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Validate URL before using it
+      const url = new URL(videoUrl, window.location.href);
+      
+      // Only allow http, https, and blob protocols
+      if (!['http:', 'https:', 'blob:'].includes(url.protocol)) {
+        console.error('Invalid protocol for download');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = url.href;
+      link.download = url.pathname.split('/').pop() || 'video.mp4';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Invalid URL for download:', error);
+    }
   };
 
   return (
