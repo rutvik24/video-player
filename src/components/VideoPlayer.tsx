@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import shaka from 'shaka-player/dist/shaka-player.ui';
-import 'shaka-player/dist/controls.css';
 import {
   Play,
   Download,
@@ -27,22 +25,52 @@ interface VideoQuality {
   bandwidth: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ShakaPlayer = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ShakaUI = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ShakaModule = any;
+
 export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<shaka.Player | null>(null);
-  const uiRef = useRef<shaka.ui.Overlay | null>(null);
+  const playerRef = useRef<ShakaPlayer>(null);
+  const uiRef = useRef<ShakaUI>(null);
+  const shakaRef = useRef<ShakaModule>(null);
 
   const [videoUrl, setVideoUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
   const [videoQualities, setVideoQualities] = useState<VideoQuality[]>([]);
+  const [shakaLoaded, setShakaLoaded] = useState(false);
 
   useEffect(() => {
+    // Dynamically import Shaka Player only on client side
+    const loadShaka = async () => {
+      try {
+        const shakaModule = await import('shaka-player/dist/shaka-player.ui');
+        await import('shaka-player/dist/controls.css');
+        shakaRef.current = shakaModule.default;
+        setShakaLoaded(true);
+      } catch (err) {
+        console.error('Failed to load Shaka Player:', err);
+        setError('Failed to load video player library');
+      }
+    };
+
+    loadShaka();
+  }, []);
+
+  useEffect(() => {
+    if (!shakaLoaded || !shakaRef.current) return;
+
+    const shaka = shakaRef.current;
+
     // Check if browser supports Shaka Player
     if (!shaka.Player.isBrowserSupported()) {
-      console.error('Browser not supported!');
+      setError('Browser not supported!');
       return;
     }
 
@@ -50,9 +78,12 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     const container = containerRef.current;
     if (!video || !container) return;
 
-    // Create Shaka Player instance
-    const player = new shaka.Player();
-    playerRef.current = player;
+    // Initialize player asynchronously
+    const initPlayer = async () => {
+      // Create Shaka Player instance and attach to video
+      const player = new shaka.Player();
+      await player.attach(video);
+      playerRef.current = player;
 
     // Create UI overlay
     const ui = new shaka.ui.Overlay(player, container, video);
@@ -131,10 +162,8 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       setVideoQualities(uniqueQualities);
     });
 
-
-
-    // Keyboard controls
-    const handleKeyDown = (e: KeyboardEvent) => {
+      // Keyboard controls
+      const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -180,7 +209,10 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', handleKeyDown);
+    };
+
+    initPlayer();
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -191,7 +223,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
         playerRef.current.destroy();
       }
     };
-  }, []);
+  }, [shakaLoaded]);
 
   const loadVideo = async (url: string, fileName?: string) => {
     const player = playerRef.current;
