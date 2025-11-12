@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Play,
   Download,
@@ -45,6 +45,33 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
   const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
   const [videoQualities, setVideoQualities] = useState<VideoQuality[]>([]);
   const [shakaLoaded, setShakaLoaded] = useState(false);
+
+  const loadVideo = useCallback(async (url: string, fileName?: string) => {
+    const player = playerRef.current;
+    const video = videoRef.current;
+    
+    if (!player || !video) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await player.load(url);
+      setLoading(false);
+      
+      if (onVideoLoad) {
+        onVideoLoad(url, fileName);
+      }
+      
+      // Auto-play after loading
+      video.play();
+    } catch (e) {
+      const error = e as Error;
+      console.error('Error loading video:', error);
+      setError(`Failed to load video: ${error.message || 'Unknown error'}`);
+      setLoading(false);
+    }
+  }, [onVideoLoad]);
 
   useEffect(() => {
     // Dynamically import Shaka Player only on client side
@@ -223,10 +250,24 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
 
     document.addEventListener('keydown', handleKeyDown);
 
+    // Listen for loadVideoFromHistory event
+    const handleLoadFromHistory = (event: Event) => {
+      const customEvent = event as CustomEvent<{ url: string; fileName: string }>;
+      const { url, fileName } = customEvent.detail;
+      setVideoUrl(url);
+      // Trigger load after state update
+      setTimeout(() => {
+        loadVideo(url, fileName);
+      }, 100);
+    };
+
+    window.addEventListener('loadVideoFromHistory', handleLoadFromHistory);
+
     initPlayer();
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('loadVideoFromHistory', handleLoadFromHistory);
       if (uiRef.current) {
         uiRef.current.destroy();
       }
@@ -234,34 +275,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
         playerRef.current.destroy();
       }
     };
-  }, [shakaLoaded]);
-
-  const loadVideo = async (url: string, fileName?: string) => {
-    const player = playerRef.current;
-    const video = videoRef.current;
-    
-    if (!player || !video) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      await player.load(url);
-      setLoading(false);
-      
-      if (onVideoLoad) {
-        onVideoLoad(url, fileName);
-      }
-      
-      // Auto-play after loading
-      video.play();
-    } catch (e) {
-      const error = e as Error;
-      console.error('Error loading video:', error);
-      setError(`Failed to load video: ${error.message || 'Unknown error'}`);
-      setLoading(false);
-    }
-  };
+  }, [shakaLoaded, loadVideo]);
 
   const handleUrlLoad = () => {
     if (videoUrl.trim()) {

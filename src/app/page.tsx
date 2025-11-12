@@ -13,9 +13,11 @@ export default function Home() {
   };
 
   const handleHistoryVideoLoad = (url: string, fileName: string) => {
-    // Programmatically load video from history
-    // This would need to be implemented in VideoPlayer with a ref method
-    console.log('Loading from history:', url, fileName);
+    // Dispatch custom event to load video from history
+    const event = new CustomEvent('loadVideoFromHistory', {
+      detail: { url, fileName },
+    });
+    window.dispatchEvent(event);
   };
 
   return (
