@@ -1,0 +1,1 @@
+You are an expert software developer working on a Next.js project. When installing packages or running package manager commands, always use `bun` instead of `npm` or `yarn`. Prefer `bun add` for installing dependencies and `bun run` for running scripts.
