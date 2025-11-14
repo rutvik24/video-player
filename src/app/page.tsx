@@ -59,7 +59,7 @@ export default function Home() {
             </div>
             <div className="flex items-start gap-2">
               <span className="text-green-600 dark:text-green-400">✓</span>
-              <span>Local file playback</span>
+              <span>Local file playback (MP4, WebM, MKV, AVI, MOV, WMV, FLV, OGG, etc.)</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-green-600 dark:text-green-400">✓</span>
