@@ -6,6 +6,7 @@ import {
   Download,
   FileVideo,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
 
 interface VideoPlayerProps {
@@ -277,10 +278,51 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     };
   }, [shakaLoaded, loadVideo]);
 
+  const getFileNameFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      
+      // Check if filename is available in query params
+      const filenameParam = urlObj.searchParams.get('filename');
+      if (filenameParam) {
+        return filenameParam;
+      }
+      
+      // Check response-content-disposition header (common in cloud storage like AWS S3, Cloudflare R2)
+      const contentDisposition = urlObj.searchParams.get('response-content-disposition');
+      if (contentDisposition) {
+        // Extract filename from: attachment; filename="Red.One.mkv"
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=["']?([^"';\n]*)["']?/);
+        if (filenameMatch && filenameMatch[1]) {
+          return decodeURIComponent(filenameMatch[1]);
+        }
+      }
+      
+      // Fall back to extracting from pathname
+      return urlObj.pathname.split('/').pop() || 'video';
+    } catch {
+      return 'video';
+    }
+  };
+
   const handleUrlLoad = () => {
     if (videoUrl.trim()) {
-      const fileName = new URL(videoUrl).pathname.split('/').pop() || 'video';
+      const fileName = getFileNameFromUrl(videoUrl);
       loadVideo(videoUrl, fileName);
+    }
+  };
+
+  const handleOpenInVLC = () => {
+    if (!videoUrl.trim()) return;
+    
+    // VLC protocol handler - vlc:// opens VLC with network stream
+    const vlcUrl = `vlc://${videoUrl}`;
+    
+    try {
+      window.location.href = vlcUrl;
+    } catch (error) {
+      console.error('Error opening VLC:', error);
+      alert('Unable to open VLC. Make sure VLC is installed on your system.');
     }
   };
 
@@ -392,13 +434,23 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
             />
           </label>
           {videoUrl && (
-            <button
-              onClick={handleDownload}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-            >
-              <Download size={18} />
-              Download
-            </button>
+            <>
+              <button
+                onClick={handleOpenInVLC}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                title="Open in VLC Player"
+              >
+                <ExternalLink size={18} />
+                Open in VLC
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Download size={18} />
+                Download
+              </button>
+            </>
           )}
         </div>
       </div>
