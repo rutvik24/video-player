@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Copy, Trash2, Play } from 'lucide-react';
+import { Copy, Trash2, Play, ExternalLink, Clock } from 'lucide-react';
 
 interface VideoHistoryItem {
   id: string;
@@ -70,6 +70,104 @@ export default function VideoHistory({ onLoadVideo }: VideoHistoryProps) {
       // Could add a toast notification here
       alert('URL copied to clipboard!');
     });
+  };
+
+  const hasTimeBasedParams = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      const params = urlObj.searchParams;
+      
+      // Common time-based parameter names
+      const timeParams = [
+        'current_time', 'currentTime', 'time', 'start_time', 'startTime', 
+        'expiry', 'expires', 'exp', 'timestamp',
+        'X-Amz-Date' // AWS/Cloudflare R2 signature timestamp
+      ];
+      
+      return timeParams.some(param => params.has(param));
+    } catch {
+      return false;
+    }
+  };
+
+  const copyUrlWithUpdatedTime = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      const params = urlObj.searchParams;
+      
+      // Get current UTC time
+      const now = new Date();
+      const currentTimeUTC = Math.floor(now.getTime() / 1000); // Unix timestamp in seconds
+      
+      // Common time-based parameter names and their variations
+      const timeParams = ['current_time', 'currentTime', 'time', 'start_time', 'startTime'];
+      const expiryParams = ['expiry', 'expires', 'exp'];
+      
+      // Update time parameters
+      timeParams.forEach(param => {
+        if (params.has(param)) {
+          params.set(param, currentTimeUTC.toString());
+        }
+      });
+      
+      // Update expiry parameters (set to 1 hour from now)
+      const expiryTime = currentTimeUTC + 3600; // 1 hour from now
+      expiryParams.forEach(param => {
+        if (params.has(param)) {
+          params.set(param, expiryTime.toString());
+        }
+      });
+      
+      // Check for timestamp parameter (might be in milliseconds)
+      if (params.has('timestamp')) {
+        params.set('timestamp', Date.now().toString());
+      }
+      
+      // Handle AWS/Cloudflare R2 signature parameters (X-Amz-Date format)
+      if (params.has('X-Amz-Date')) {
+        // Format: YYYYMMDDTHHmmssZ (e.g., 20251112T162406Z)
+        const year = now.getUTCFullYear();
+        const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(now.getUTCDate()).padStart(2, '0');
+        const hours = String(now.getUTCHours()).padStart(2, '0');
+        const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+        const amzDate = `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+        
+        params.set('X-Amz-Date', amzDate);
+        
+        // Also update X-Amz-Credential date if present (format: YYYYMMDD)
+        if (params.has('X-Amz-Credential')) {
+          const credential = params.get('X-Amz-Credential') || '';
+          const credentialParts = credential.split('/');
+          if (credentialParts.length >= 2) {
+            credentialParts[1] = `${year}${month}${day}`;
+            params.set('X-Amz-Credential', credentialParts.join('/'));
+          }
+        }
+      }
+      
+      const updatedUrl = urlObj.toString();
+      
+      navigator.clipboard.writeText(updatedUrl).then(() => {
+        alert('URL with updated time copied to clipboard!');
+      });
+    } catch (error) {
+      console.error('Error updating URL time:', error);
+      alert('Failed to update URL time parameters');
+    }
+  };
+
+  const openInVLC = (url: string) => {
+    // VLC protocol handler - vlc:// opens VLC with network stream
+    const vlcUrl = `vlc://${url}`;
+    
+    try {
+      window.location.href = vlcUrl;
+    } catch (error) {
+      console.error('Error opening VLC:', error);
+      alert('Unable to open VLC. Make sure VLC is installed on your system.');
+    }
   };
 
   const deleteItem = (id: string) => {
@@ -157,12 +255,28 @@ export default function VideoHistory({ onLoadVideo }: VideoHistoryProps) {
                 <Play size={18} />
               </button>
               <button
+                onClick={() => openInVLC(item.url)}
+                className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded transition-colors"
+                title="Open in VLC Player"
+              >
+                <ExternalLink size={18} />
+              </button>
+              <button
                 onClick={() => copyUrl(item.url)}
                 className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
                 title="Copy URL"
               >
                 <Copy size={18} />
               </button>
+              {hasTimeBasedParams(item.url) && (
+                <button
+                  onClick={() => copyUrlWithUpdatedTime(item.url)}
+                  className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded transition-colors"
+                  title="Copy URL with updated time"
+                >
+                  <Clock size={18} />
+                </button>
+              )}
               <button
                 onClick={() => deleteItem(item.id)}
                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
