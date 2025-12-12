@@ -10,6 +10,8 @@ A professional, feature-rich video player built with [Shaka Player](https://gith
 - 🎬 **Multiple Format Support**: HLS, MPEG-DASH, and MP4
 - 🔊 **Multi-Audio Tracks**: Switch between multiple audio tracks on the fly
 - 📺 **Quality Selection**: Automatic and manual quality switching (SD, HD, UHD)
+- ⚡ **Playback Speed Control**: Adjust playback speed from 0.5x to 2x
+- 📝 **Captions/Subtitles**: Toggle and select from available caption tracks
 - 🎵 **Surround Sound**: Support for 5.1 and 7.1 channel audio
 - 🎨 **Dolby Audio**: DD 5.1 and DDP 5.1 support
 - 🌟 **Dolby Vision**: When available in the content
