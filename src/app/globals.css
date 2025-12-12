@@ -26,12 +26,13 @@ body {
 }
 
 /* Reduce big play button size by 70% */
-.shaka-play-button {
+/* .shaka-play-button {
   width: 30% !important;
   height: 30% !important;
-}
+} */
 
-.shaka-play-button svg {
+/* .shaka-play-button svg {
   width: 100% !important;
   height: 100% !important;
-}
+} */
+
