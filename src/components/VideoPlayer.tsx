@@ -180,7 +180,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
         'fullscreen',
         'overflow_menu',
       ],
-      overflowMenuButtons: ['captions', 'quality', 'language', 'picture_in_picture'],
+      overflowMenuButtons: ['playback_rate', 'captions', 'quality', 'language', 'picture_in_picture'],
       seekBarColors: {
         base: 'rgba(255, 255, 255, 0.3)',
         buffered: 'rgba(255, 255, 255, 0.5)',
