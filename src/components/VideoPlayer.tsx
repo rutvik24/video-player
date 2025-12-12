@@ -1,13 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import {
-  Play,
-  Download,
-  FileVideo,
-  Loader2,
-  ExternalLink,
-} from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Play, Download, FileVideo, Loader2, ExternalLink } from "lucide-react";
 
 interface VideoPlayerProps {
   onVideoLoad?: (url: string, fileName?: string) => void;
@@ -40,54 +34,57 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
   const uiRef = useRef<ShakaUI>(null);
   const shakaRef = useRef<ShakaModule>(null);
 
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
   const [videoQualities, setVideoQualities] = useState<VideoQuality[]>([]);
   const [shakaLoaded, setShakaLoaded] = useState(false);
 
-  const loadVideo = useCallback(async (url: string, fileName?: string) => {
-    const player = playerRef.current;
-    const video = videoRef.current;
-    
-    if (!player || !video) return;
+  const loadVideo = useCallback(
+    async (url: string, fileName?: string) => {
+      const player = playerRef.current;
+      const video = videoRef.current;
 
-    setLoading(true);
-    setError('');
+      if (!player || !video) return;
 
-    try {
-      await player.load(url);
-      setLoading(false);
-      
-      if (onVideoLoad) {
-        onVideoLoad(url, fileName);
+      setLoading(true);
+      setError("");
+
+      try {
+        await player.load(url);
+        setLoading(false);
+
+        if (onVideoLoad) {
+          onVideoLoad(url, fileName);
+        }
+
+        // Auto-play after loading
+        video.play();
+      } catch (e) {
+        const error = e as Error;
+        console.error("Error loading video:", error);
+        setError(`Failed to load video: ${error.message || "Unknown error"}`);
+        setLoading(false);
       }
-      
-      // Auto-play after loading
-      video.play();
-    } catch (e) {
-      const error = e as Error;
-      console.error('Error loading video:', error);
-      setError(`Failed to load video: ${error.message || 'Unknown error'}`);
-      setLoading(false);
-    }
-  }, [onVideoLoad]);
+    },
+    [onVideoLoad]
+  );
 
   useEffect(() => {
     // Dynamically import Shaka Player only on client side
     const loadShaka = async () => {
       try {
-        const shakaModule = await import('shaka-player/dist/shaka-player.ui');
+        const shakaModule = await import("shaka-player/dist/shaka-player.ui");
         // Import CSS - TypeScript doesn't recognize CSS imports, but webpack/Next.js does
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        await import('shaka-player/dist/controls.css');
+        await import("shaka-player/dist/controls.css");
         shakaRef.current = shakaModule.default;
         setShakaLoaded(true);
       } catch (err) {
-        console.error('Failed to load Shaka Player:', err);
-        setError('Failed to load video player library');
+        console.error("Failed to load Shaka Player:", err);
+        setError("Failed to load video player library");
       }
     };
 
@@ -101,7 +98,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
 
     // Check if browser supports Shaka Player
     if (!shaka.Player.isBrowserSupported()) {
-      setError('Browser not supported!');
+      setError("Browser not supported!");
       return;
     }
 
@@ -111,13 +108,16 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
 
     // Keyboard controls handler
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
       switch (e.key.toLowerCase()) {
-        case ' ':
-        case 'k':
+        case " ":
+        case "k":
           e.preventDefault();
           if (video.paused) {
             video.play();
@@ -125,27 +125,27 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
             video.pause();
           }
           break;
-        case 'arrowleft':
+        case "arrowleft":
           e.preventDefault();
           video.currentTime = Math.max(0, video.currentTime - 5);
           break;
-        case 'arrowright':
+        case "arrowright":
           e.preventDefault();
           video.currentTime = Math.min(video.duration, video.currentTime + 5);
           break;
-        case 'arrowup':
+        case "arrowup":
           e.preventDefault();
           video.volume = Math.min(1, video.volume + 0.1);
           break;
-        case 'arrowdown':
+        case "arrowdown":
           e.preventDefault();
           video.volume = Math.max(0, video.volume - 0.1);
           break;
-        case 'm':
+        case "m":
           e.preventDefault();
           video.muted = !video.muted;
           break;
-        case 'f':
+        case "f":
           e.preventDefault();
           if (document.fullscreenElement) {
             document.exitFullscreen();
@@ -163,97 +163,123 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       await player.attach(video);
       playerRef.current = player;
 
-    // Create UI overlay
-    const ui = new shaka.ui.Overlay(player, container, video);
-    uiRef.current = ui;
+      // Create UI overlay
+      const ui = new shaka.ui.Overlay(player, container, video);
+      uiRef.current = ui;
 
-    // Configure UI
-    const config = {
-      addSeekBar: true,
-      addBigPlayButton: true,
-      controlPanelElements: [
-        'play_pause',
-        'time_and_duration',
-        'spacer',
-        'mute',
-        'volume',
-        'fullscreen',
-        'overflow_menu',
-      ],
-      overflowMenuButtons: ['captions', 'quality', 'language', 'picture_in_picture'],
-      seekBarColors: {
-        base: 'rgba(255, 255, 255, 0.3)',
-        buffered: 'rgba(255, 255, 255, 0.5)',
-        played: 'rgb(255, 0, 0)',
-      },
-    };
-    ui.configure(config);
+      // Configure UI
+      const config = {
+        addSeekBar: true,
+        addBigPlayButton: true,
+        controlPanelElements: [
+          "play_pause",
+          "time_and_duration",
+          "spacer",
+          "mute",
+          "volume",
+          "fullscreen",
+          "overflow_menu",
+          "cast",
+          "fast_forward",
+          "airplay",
+          "chapter",
+        ],
+        overflowMenuButtons: [
+          "playback_rate",
+          "captions",
+          "quality",
+          "language",
+          "picture_in_picture",
+          "airplay",
+          "chapter",
+        ],
+        seekBarColors: {
+          base: "rgba(255, 255, 255, 0.3)",
+          buffered: "rgba(255, 255, 255, 0.5)",
+          played: "rgb(255, 0, 0)",
+        },
+      };
+      ui.configure(config);
 
-    // Error handling
-    player.addEventListener('error', (event: Event) => {
-      const errorEvent = event as unknown as { detail: { code: number; message?: string } };
-      console.error('Error code', errorEvent.detail.code, 'object', errorEvent.detail);
-      setError(`Error: ${errorEvent.detail.code} - ${errorEvent.detail.message || 'Unknown error'}`);
-      setLoading(false);
-    });
-
-    // Track changes
-    player.addEventListener('trackschanged', () => {
-      const tracks = player.getVariantTracks();
-      const audioTracksList = player.getAudioLanguagesAndRoles();
-      
-      // Get unique audio tracks
-      const uniqueAudio: AudioTrack[] = [];
-      const seenLanguages = new Set<string>();
-      
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      audioTracksList.forEach((track: any, index: number) => {
-        const key = `${track.language}-${track.role}`;
-        if (!seenLanguages.has(key)) {
-          seenLanguages.add(key);
-          uniqueAudio.push({
-            id: index,
-            language: track.language,
-            label: track.label || track.language,
-            channels: track.channelsCount || 2,
-          });
-        }
+      // Error handling
+      player.addEventListener("error", (event: Event) => {
+        const errorEvent = event as unknown as {
+          detail: { code: number; message?: string };
+        };
+        console.error(
+          "Error code",
+          errorEvent.detail.code,
+          "object",
+          errorEvent.detail
+        );
+        setError(
+          `Error: ${errorEvent.detail.code} - ${
+            errorEvent.detail.message || "Unknown error"
+          }`
+        );
+        setLoading(false);
       });
-      
-      setAudioTracks(uniqueAudio);
 
-      // Get video qualities
-       
-      const qualities = tracks
+      // Track changes
+      player.addEventListener("trackschanged", () => {
+        const tracks = player.getVariantTracks();
+        const audioTracksList = player.getAudioLanguagesAndRoles();
+
+        // Get unique audio tracks
+        const uniqueAudio: AudioTrack[] = [];
+        const seenLanguages = new Set<string>();
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((track: any) => track.height)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((track: any) => ({
-          height: track.height!,
-          width: track.width!,
-          bandwidth: track.bandwidth,
-        }))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .sort((a: any, b: any) => b.height - a.height);
-      
-      // Remove duplicates
-       
-      const uniqueQualities = qualities.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (quality: any, index: number, self: any[]) =>
+        audioTracksList.forEach((track: any, index: number) => {
+          const key = `${track.language}-${track.role}`;
+          if (!seenLanguages.has(key)) {
+            seenLanguages.add(key);
+            uniqueAudio.push({
+              id: index,
+              language: track.language,
+              label: track.label || track.language,
+              channels: track.channelsCount || 2,
+            });
+          }
+        });
+
+        setAudioTracks(uniqueAudio);
+
+        // Get video qualities
+
+        const qualities = tracks
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          index === self.findIndex((q: any) => q.height === quality.height)
-      );
-      
-      setVideoQualities(uniqueQualities);
-    });
+          .filter((track: any) => track.height)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((track: any) => ({
+            height: track.height!,
+            width: track.width!,
+            bandwidth: track.bandwidth,
+          }))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .sort((a: any, b: any) => b.height - a.height);
+
+        // Remove duplicates
+
+        const uniqueQualities = qualities.filter(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (quality: any, index: number, self: any[]) =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            index === self.findIndex((q: any) => q.height === quality.height)
+        );
+
+        setVideoQualities(uniqueQualities);
+      });
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     // Listen for loadVideoFromHistory event
     const handleLoadFromHistory = (event: Event) => {
-      const customEvent = event as CustomEvent<{ url: string; fileName: string }>;
+      const customEvent = event as CustomEvent<{
+        url: string;
+        fileName: string;
+      }>;
       const { url, fileName } = customEvent.detail;
       setVideoUrl(url);
       // Trigger load after state update
@@ -262,13 +288,13 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
       }, 100);
     };
 
-    window.addEventListener('loadVideoFromHistory', handleLoadFromHistory);
+    window.addEventListener("loadVideoFromHistory", handleLoadFromHistory);
 
     initPlayer();
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('loadVideoFromHistory', handleLoadFromHistory);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("loadVideoFromHistory", handleLoadFromHistory);
       if (uiRef.current) {
         uiRef.current.destroy();
       }
@@ -281,27 +307,31 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
   const getFileNameFromUrl = (url: string): string => {
     try {
       const urlObj = new URL(url);
-      
+
       // Check if filename is available in query params
-      const filenameParam = urlObj.searchParams.get('filename');
+      const filenameParam = urlObj.searchParams.get("filename");
       if (filenameParam) {
         return filenameParam;
       }
-      
+
       // Check response-content-disposition header (common in cloud storage like AWS S3, Cloudflare R2)
-      const contentDisposition = urlObj.searchParams.get('response-content-disposition');
+      const contentDisposition = urlObj.searchParams.get(
+        "response-content-disposition"
+      );
       if (contentDisposition) {
         // Extract filename from: attachment; filename="Red.One.mkv"
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=["']?([^"';\n]*)["']?/);
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=["']?([^"';\n]*)["']?/
+        );
         if (filenameMatch && filenameMatch[1]) {
           return decodeURIComponent(filenameMatch[1]);
         }
       }
-      
+
       // Fall back to extracting from pathname
-      return urlObj.pathname.split('/').pop() || 'video';
+      return urlObj.pathname.split("/").pop() || "video";
     } catch {
-      return 'video';
+      return "video";
     }
   };
 
@@ -314,15 +344,15 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
 
   const handleOpenInVLC = () => {
     if (!videoUrl.trim()) return;
-    
+
     // VLC protocol handler - vlc:// opens VLC with network stream
     const vlcUrl = `vlc://${videoUrl}`;
-    
+
     try {
       window.location.href = vlcUrl;
     } catch (error) {
-      console.error('Error opening VLC:', error);
-      alert('Unable to open VLC. Make sure VLC is installed on your system.');
+      console.error("Error opening VLC:", error);
+      alert("Unable to open VLC. Make sure VLC is installed on your system.");
     }
   };
 
@@ -334,18 +364,18 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     }
   };
 
-  const handleSampleVideo = (type: 'mp4' | 'hls') => {
-    if (type === 'mp4') {
+  const handleSampleVideo = (type: "mp4" | "hls") => {
+    if (type === "mp4") {
       // Sample MP4 video
       loadVideo(
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        'BigBuckBunny.mp4'
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        "BigBuckBunny.mp4"
       );
     } else {
       // Sample HLS with multiple audio tracks
       loadVideo(
-        'https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8',
-        'angel-one.m3u8'
+        "https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8",
+        "angel-one.m3u8"
       );
     }
   };
@@ -357,21 +387,21 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
     try {
       // Validate URL before using it
       const url = new URL(videoUrl, window.location.href);
-      
+
       // Only allow http, https, and blob protocols
-      if (!['http:', 'https:', 'blob:'].includes(url.protocol)) {
-        console.error('Invalid protocol for download');
+      if (!["http:", "https:", "blob:"].includes(url.protocol)) {
+        console.error("Invalid protocol for download");
         return;
       }
 
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url.href;
-      link.download = url.pathname.split('/').pop() || 'video.mp4';
+      link.download = url.pathname.split("/").pop() || "video.mp4";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Invalid URL for download:', error);
+      console.error("Invalid URL for download:", error);
     }
   };
 
@@ -389,14 +419,14 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
             onChange={(e) => setVideoUrl(e.target.value)}
             placeholder="Enter video URL (HLS, DASH, MP4...)"
             className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onKeyDown={(e) => e.key === 'Enter' && handleUrlLoad()}
+            onKeyDown={(e) => e.key === "Enter" && handleUrlLoad()}
           />
           <button
             onClick={handleUrlLoad}
             disabled={!videoUrl.trim() || loading}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-zinc-400 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? <Loader2 className="animate-spin" /> : 'Load'}
+            {loading ? <Loader2 className="animate-spin" /> : "Load"}
           </button>
         </div>
       </div>
@@ -408,7 +438,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
         </h2>
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={() => handleSampleVideo('mp4')}
+            onClick={() => handleSampleVideo("mp4")}
             disabled={loading}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-zinc-400 transition-colors"
           >
@@ -416,7 +446,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
             Load Sample MP4
           </button>
           <button
-            onClick={() => handleSampleVideo('hls')}
+            onClick={() => handleSampleVideo("hls")}
             disabled={loading}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-zinc-400 transition-colors"
           >
@@ -467,7 +497,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
         <div
           ref={containerRef}
           className="relative bg-black"
-          style={{ aspectRatio: '16/9' }}
+          style={{ aspectRatio: "16/9" }}
         >
           <video
             ref={videoRef}
@@ -526,14 +556,39 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
           Keyboard Controls
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-zinc-600 dark:text-zinc-400">
-          <div><kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">Space</kbd> Play/Pause</div>
-          <div><kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">←/→</kbd> Seek</div>
-          <div><kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">↑/↓</kbd> Volume</div>
-          <div><kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">M</kbd> Mute</div>
-          <div><kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">F</kbd> Fullscreen</div>
-          <div><kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">K</kbd> Play/Pause</div>
+          <div>
+            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">
+              Space
+            </kbd>{" "}
+            Play/Pause
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">
+              ←/→
+            </kbd>{" "}
+            Seek
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">
+              ↑/↓
+            </kbd>{" "}
+            Volume
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">M</kbd>{" "}
+            Mute
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">F</kbd>{" "}
+            Fullscreen
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 rounded">K</kbd>{" "}
+            Play/Pause
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
