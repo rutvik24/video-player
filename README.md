@@ -7,7 +7,7 @@ A professional, feature-rich video player built with [Shaka Player](https://gith
 ## ✨ Features
 
 ### Core Playback
-- 🎬 **Multiple Format Support**: HLS, MPEG-DASH, and MP4
+- 🎬 **Multiple Format Support**: HLS, MPEG-DASH, MP4, and more
 - 🔊 **Multi-Audio Tracks**: Switch between multiple audio tracks on the fly
 - 📺 **Quality Selection**: Automatic and manual quality switching (SD, HD, UHD)
 - ⚡ **Playback Speed Control**: Adjust playback speed from 0.5x to 2x
@@ -17,8 +17,9 @@ A professional, feature-rich video player built with [Shaka Player](https://gith
 - 🌟 **Dolby Vision**: When available in the content
 
 ### Video Loading
-- 🔗 **URL Loading**: Load videos from any URL
-- 📁 **Local Files**: Upload and play videos from your device
+- 🔗 **URL Loading**: Load videos from any URL (HLS, DASH, MP4, etc.)
+- 📁 **Local Files**: Upload and play local video files in various formats
+  - **Supported formats**: MP4, WebM, MKV, AVI, MOV, WMV, FLV, OGG, 3GP, MPEG, and more
 - 🚀 **Quick Samples**: Pre-configured MP4 and HLS sample videos
 
 ### Advanced Features
@@ -137,7 +138,7 @@ video-player/
 ### Loading a Video
 
 1. **From URL**: Enter a video URL (HLS, DASH, or MP4) in the input field and click "Load"
-2. **Local File**: Click "Upload Local File" and select a video from your device
+2. **Local File**: Click "Upload Local File" and select a video from your device (supports MP4, WebM, MKV, AVI, MOV, WMV, FLV, OGG, and more)
 3. **Sample Videos**: Click "Load Sample MP4" or "Load Sample HLS" for quick testing
 
 ### Supported URL Formats
@@ -145,6 +146,22 @@ video-player/
 - **HLS**: `https://example.com/playlist.m3u8`
 - **DASH**: `https://example.com/manifest.mpd`
 - **MP4**: `https://example.com/video.mp4`
+
+### Supported Local File Formats
+
+The player supports a wide range of video formats for local playback:
+- **MP4** (`.mp4`) - MPEG-4 Part 14
+- **WebM** (`.webm`) - Web Media File Format
+- **MKV** (`.mkv`) - Matroska Multimedia Container
+- **AVI** (`.avi`) - Audio Video Interleave
+- **MOV** (`.mov`) - QuickTime File Format
+- **WMV** (`.wmv`) - Windows Media Video
+- **FLV** (`.flv`) - Flash Video
+- **OGG** (`.ogg`, `.ogv`) - Ogg Vorbis/Theora
+- **3GP** (`.3gp`, `.3g2`) - 3GPP Multimedia
+- **MPEG** (`.mpeg`, `.mpg`) - MPEG Video
+
+*Note: Actual playback support depends on your browser's codec support. Modern browsers like Chrome, Firefox, and Safari support most common formats.*
 
 ### Video History
 

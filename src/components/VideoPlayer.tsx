@@ -458,7 +458,7 @@ export default function VideoPlayer({ onVideoLoad }: VideoPlayerProps) {
             Upload Local File
             <input
               type="file"
-              accept="video/*"
+              accept="video/mp4,video/webm,video/ogg,video/x-matroska,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/x-flv,video/3gpp,video/3gpp2,video/mpeg,video/*"
               onChange={handleFileUpload}
               className="hidden"
             />
